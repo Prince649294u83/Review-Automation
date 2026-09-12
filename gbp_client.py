@@ -23,8 +23,11 @@ def get_credentials():
     """
     creds = None
 
-    if os.path.exists(TOKEN_FILE):
-        creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+    if os.path.exists(TOKEN_FILE) and os.path.getsize(TOKEN_FILE) > 0:
+        try:
+            creds = Credentials.from_authorized_user_file(TOKEN_FILE, SCOPES)
+        except Exception:
+            creds = None
 
     # Auto-refresh expired token using refresh_token (no login needed)
     if creds and creds.expired and creds.refresh_token:
