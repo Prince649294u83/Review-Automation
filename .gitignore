@@ -1,0 +1,23 @@
+# Environment secrets
+.env
+.env.local
+
+# Google API Credentials & Tokens
+credentials.json
+token.json
+
+# SQLite database
+*.db
+reviews.db
+
+# Logs
+*.log
+bot.log
+
+# Python cache & virtual environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/

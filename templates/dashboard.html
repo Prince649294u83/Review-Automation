@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CRG Meridian — Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f4f8; margin: 0; }
+        .nav {
+            background: #1a73e8;
+            color: white;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .nav a { color: white; text-decoration: none; }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            padding: 20px 24px;
+        }
+        .stat {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+        .stat h2 { font-size: 2.5em; margin: 0; }
+        .stat p  { color: #666; margin: 4px 0 0; }
+        .section { padding: 0 24px 24px; }
+        .section h3 { margin-bottom: 12px; color: #333; }
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+        }
+        .card-left { flex: 1; }
+        .reviewer  { font-weight: bold; margin-bottom: 4px; }
+        .comment   { color: #555; font-size: .9em; margin: 4px 0; }
+        .meta      { color: #999; font-size: .8em; }
+        .badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: .8em;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+        .pending    { background: #fef3c7; color: #92400e; }
+        .ai_drafted { background: #dbeafe; color: #1e40af; }
+        .posted     { background: #d1fae5; color: #065f46; }
+        .skipped    { background: #f3f4f6; color: #6b7280; }
+        .btn-link {
+            display: inline-block;
+            margin-top: 8px;
+            color: #1a73e8;
+            text-decoration: none;
+            font-size: .9em;
+        }
+        .trigger-btn {
+            background: #1a73e8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: .9em;
+        }
+        @media (max-width: 600px) {
+            .stats { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="nav">
+    <span>🍽️ CRG Meridian — Review Bot</span>
+    <div>
+        <button class="trigger-btn" onclick="runNow()">▶ Run Now</button>
+        &nbsp;
+        <a href="/logout">Logout</a>
+    </div>
+</div>
+
+<div class="stats">
+    <div class="stat">
+        <h2>{{ counts.pending }}</h2>
+        <p>⏳ Pending</p>
+    </div>
+    <div class="stat">
+        <h2 style="color:#1e40af;">{{ counts.drafts }}</h2>
+        <p>📝 Needs Approval</p>
+    </div>
+    <div class="stat">
+        <h2 style="color:#065f46;">{{ counts.posted }}</h2>
+        <p>✅ Auto-Posted</p>
+    </div>
+    <div class="stat">
+        <h2 style="color:#6b7280;">{{ counts.skipped }}</h2>
+        <p>⏭️ Skipped</p>
+    </div>
+</div>
+
+<div class="section">
+    <h3>All Reviews</h3>
+    {% for r in reviews %}
+    <div class="card">
+        <div class="card-left">
+            <div class="reviewer">
+                {{ '⭐' * r.star_rating }} {{ r.reviewer_name }}
+            </div>
+            <div class="comment">
+                {{ r.comment[:120] or "(No written comment)" }}
+                {% if r.comment and r.comment|length > 120 %}...{% endif %}
+            </div>
+            <div class="meta">
+                Posted: {{ r.review_time[:10] }}
+                {% if r.posted_at %}
+                 · Replied: {{ r.posted_at[:10] }}
+                {% endif %}
+            </div>
+            {% if r.status in ['pending', 'ai_drafted'] %}
+            <a href="/review/{{ r.review_id }}" class="btn-link">
+                → View & Manage
+            </a>
+            {% endif %}
+        </div>
+        <span class="badge {{ r.status }}">
+            {{ r.status.replace('_', ' ').title() }}
+        </span>
+    </div>
+    {% else %}
+    <p style="color:#999; text-align:center; padding:40px;">
+        No reviews yet — the bot will fetch them shortly! 🎉
+    </p>
+    {% endfor %}
+</div>
+
+<script>
+function runNow() {
+    if (!confirm("Manually trigger fetch + process now?")) return;
+    fetch("/api/run-now", { method: "POST" })
+        .then(r => r.json())
+        .then(d => alert(d.ok ? "✅ " + d.msg : "❌ " + d.msg))
+        .catch(e => alert("Error: " + e));
+}
+</script>
+
+</body>
+</html>
