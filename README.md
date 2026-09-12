@@ -9,7 +9,7 @@ A fully automated, $0/month AI review reply bot and monitoring dashboard for CRG
 | Component | Service | Cost |
 | :--- | :--- | :--- |
 | 🖥️ **Server (24/7)** | Oracle Cloud Always Free (Ampere ARM VM) | $0 forever |
-| 🤖 **AI Replies** | Groq Free Tier (`llama-3.3-70b-versatile`) | $0 |
+| 🤖 **AI Replies** | Groq Free Tier (`openai/gpt-oss-120b`) | $0 |
 | 📡 **Google Reviews API** | Google Business Profile API | $0 |
 | 🗄️ **Database** | SQLite (`reviews.db`) | $0 |
 | 📲 **Notifications** | Telegram Bot API | $0 |
@@ -30,7 +30,7 @@ Every 30 min (5 min offset):
   → Check each pending review
   → Is it 24+ hours old?
       NO  → Skip this cycle, wait
-      YES → Send review to Groq (Llama 3.3 70B) → Generate owner reply draft
+      YES → Send review to Groq (GPT-OSS 120B) → Generate owner reply draft
   → Routing based on star rating:
       ⭐⭐⭐⭐⭐ (4–5 Stars):
         → Auto-post reply via GBP API
@@ -55,7 +55,7 @@ Every 10 min:
 crg_review_bot/
 ├── app.py               # Flask web dashboard & manual trigger API
 ├── gbp_client.py        # Google Business Profile API OAuth & reply client
-├── ai_client.py         # Groq API integration (Llama 3.3 70B)
+├── ai_client.py         # Groq API integration (GPT-OSS 120B)
 ├── worker.py            # APScheduler 30-min & 10-min background jobs
 ├── db.py                # SQLite database interface
 ├── notifier.py          # Telegram Bot notifications & alerts
@@ -117,7 +117,7 @@ nano .env
 3. Add it to your `.env`:
    ```env
    GROQ_API_KEY=gsk_xxxxxxxxxxxxxxxxxxxx
-   GROQ_MODEL=llama-3.3-70b-versatile
+   GROQ_MODEL=openai/gpt-oss-120b
    ```
 
 ---
