@@ -10,7 +10,7 @@ load_dotenv()
 
 SCOPES        = ["https://www.googleapis.com/auth/business.manage"]
 LOCATION_NAME = os.getenv("GBP_LOCATION_NAME")  # accounts/X/locations/Y
-TOKEN_FILE    = "token.json"
+TOKEN_FILE    = os.getenv("TOKEN_FILE", "/etc/secrets/token.json" if os.path.exists("/etc/secrets") else "token.json")
 CREDS_FILE    = "credentials.json"   # Downloaded from Google Cloud Console
 
 

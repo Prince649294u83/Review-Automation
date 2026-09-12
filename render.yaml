@@ -21,3 +21,7 @@ services:
         value: "24"
       - key: AUTO_REPLY_MIN_STARS
         value: "4"
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: TOKEN_FILE
+        value: /etc/secrets/token.json
