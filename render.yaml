@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: crg-review-bot
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    envVars:
+      - key: SECRET_KEY
+        value: your_secret_key
+      - key: APP_PASSWORD
+        value: your_password
+      - key: GROQ_API_KEY
+        value: your_groq_key
+      - key: TELEGRAM_BOT_TOKEN
+        value: your_telegram_token
+      - key: TELEGRAM_CHAT_ID
+        value: your_chat_id
+      - key: GBP_LOCATION_NAME
+        value: accounts/X/locations/Y
+      - key: REPLY_DELAY_HOURS
+        value: "24"
+      - key: AUTO_REPLY_MIN_STARS
+        value: "4"
