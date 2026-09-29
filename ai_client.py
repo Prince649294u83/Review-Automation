@@ -71,8 +71,12 @@ Vary your language — this should sound like a fresh, personal message.
             {"role": "user",   "content": user_message}
         ],
         temperature = 0.85,   # Enough variety so replies never sound copy-pasted
-        max_tokens  = 180,
+        max_tokens  = 1024,
         top_p       = 0.9,
     )
 
-    return response.choices[0].message.content.strip()
+    content = (response.choices[0].message.content or "").strip()
+    if not content:
+        raise ValueError("Groq returned empty reply content")
+    return content
+
