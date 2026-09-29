@@ -57,16 +57,26 @@ def fetch_and_store():
             star_rating  = STAR_MAP.get(r.get("starRating", "FIVE"), 5)
             comment      = r.get("comment", "")
             review_time  = r.get("createTime", datetime.now(timezone.utc).isoformat())
-            already_replied = "reviewReply" in r  # Already has an owner reply
+            existing_reply = r.get("reviewReply", {}).get("comment", "")
+            already_replied = bool(existing_reply or "reviewReply" in r)
 
-            # Only store if: new to us AND not already replied to
-            if not db.review_exists(review_id) and not already_replied:
+            if not db.review_exists(review_id):
                 db.insert_review(
                     review_id, reviewer, star_rating,
                     comment, review_time
                 )
-                new += 1
-                log.info(f"  ➕ Stored: '{reviewer}' ({star_rating}★)")
+                if already_replied:
+                    db.update_review(
+                        review_id,
+                        status="posted",
+                        ai_draft=existing_reply or "(Owner replied on Google)",
+                        approved_reply=existing_reply or "(Owner replied on Google)",
+                        posted_at=review_time
+                    )
+                    log.info(f"  📜 Preserved historical replied review: '{reviewer}' ({star_rating}★)")
+                else:
+                    new += 1
+                    log.info(f"  ➕ Stored unreplied review: '{reviewer}' ({star_rating}★)")
 
         log.info(f"✅ Done. {new} new reviews stored.")
 

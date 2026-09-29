@@ -51,16 +51,20 @@ This scenario polls Google Business Profile 24/7, sends review details to your P
        "reviewer_name": "{{1.reviewer.displayName}}",
        "star_rating": "{{1.starRating}}",
        "comment": "{{1.comment}}",
-       "review_time": "{{1.createTime}}"
+       "review_time": "{{1.createTime}}",
+       "existing_reply": "{{1.reviewReply.comment}}"
      }
      ```
    - **Parse response:** `Yes`
 
-### Step 2.3 — Add a Router for Star-Rating Routing
+### Step 2.3 — Add a Router for Star-Rating Routing & Safety Filters
 1. Add a **Router** module after the HTTP module.
 
 #### Route A (Auto-Reply for 4 & 5 Stars):
-- **Filter:** Set condition `2.data.action` **Equal to** `reply`
+- **Filter (Critical Zero-Overwrite Guard):**
+  - Condition 1: `2.data.action` **Equal to** `reply`
+  - **AND** Condition 2: `1.reviewReply.comment` **Does not exist**
+  *(This ensures Make.com will NEVER call Create/Update Reply on a review that already had an owner response on Google Maps).*
 - Add module: **Google My Business** -> **Create/Update a Reply**
   - **Location:** CRG Meridian
   - **Review:** `{{1.name}}`
@@ -69,6 +73,10 @@ This scenario polls Google Business Profile 24/7, sends review details to your P
 #### Route B (1 to 3 Stars — Human-in-the-Loop):
 - **Filter:** Set condition `2.data.action` **Equal to** `hold_for_approval`
 - *(No further action needed in Make.com. Your Python bot has already recorded the review in SQLite and sent a Telegram notification with an edit/approval link directly to the manager's phone).*
+
+#### Route C (Historical / Already Replied Reviews):
+- **Filter:** Set condition `2.data.action` **Equal to** `already_replied`
+- *(No action module needed. The bot has safely recorded the historical review and previous owner reply in the database so it appears on your dashboard, but halts posting).*
 
 ### Step 2.4 — Set Schedule
 - Set the trigger timer: **Every 15 minutes** (or every 30 minutes).

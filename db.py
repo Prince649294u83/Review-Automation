@@ -81,12 +81,12 @@ def get_pending_reviews():
     if is_postgres():
         from psycopg2.extras import RealDictCursor
         c = conn.cursor(cursor_factory=RealDictCursor)
-        c.execute("SELECT * FROM reviews WHERE status = 'pending'")
+        c.execute("SELECT * FROM reviews WHERE status = 'pending' ORDER BY review_time DESC")
         rows = [dict(r) for r in c.fetchall()]
     else:
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        c.execute("SELECT * FROM reviews WHERE status = 'pending'")
+        c.execute("SELECT * FROM reviews WHERE status = 'pending' ORDER BY review_time DESC")
         rows = [dict(r) for r in c.fetchall()]
     conn.close()
     return rows
@@ -97,12 +97,12 @@ def get_awaiting_approval():
     if is_postgres():
         from psycopg2.extras import RealDictCursor
         c = conn.cursor(cursor_factory=RealDictCursor)
-        c.execute("SELECT * FROM reviews WHERE status = 'ai_drafted'")
+        c.execute("SELECT * FROM reviews WHERE status = 'ai_drafted' ORDER BY review_time DESC")
         rows = [dict(r) for r in c.fetchall()]
     else:
         conn.row_factory = sqlite3.Row
         c = conn.cursor()
-        c.execute("SELECT * FROM reviews WHERE status = 'ai_drafted'")
+        c.execute("SELECT * FROM reviews WHERE status = 'ai_drafted' ORDER BY review_time DESC")
         rows = [dict(r) for r in c.fetchall()]
     conn.close()
     return rows

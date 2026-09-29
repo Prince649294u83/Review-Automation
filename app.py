@@ -196,11 +196,50 @@ def webhook_review_received():
     if not review_id:
         return jsonify({"ok": False, "error": "Missing review_id"}), 400
 
+    # Detect existing owner reply in all possible formats from partner/Google
+    existing_reply = ""
+    if data.get("existing_reply"):
+        existing_reply = str(data.get("existing_reply")).strip()
+    elif isinstance(data.get("reviewReply"), dict):
+        existing_reply = str(data.get("reviewReply", {}).get("comment", "")).strip()
+    elif isinstance(data.get("review_reply"), dict):
+        existing_reply = str(data.get("review_reply", {}).get("comment", "")).strip()
+
+    # Normalize empty/null template strings from automation platforms
+    if existing_reply.lower() in ("none", "null", "undefined", '""', "''"):
+        existing_reply = ""
+
+    has_reply_flag = False
+    if "has_reply" in data:
+        raw_hr = str(data.get("has_reply")).strip().lower()
+        if raw_hr in ("true", "1", "yes"):
+            has_reply_flag = True
+
+    # Check if review already exists in our database
     existing = db.get_review_by_id(review_id)
     if existing:
+        # If it was already replied / posted, NEVER re-reply or edit
+        if existing.get("status") == "posted" or existing.get("approved_reply") or existing_reply or has_reply_flag:
+            if existing_reply and not existing.get("approved_reply"):
+                db.update_review(
+                    review_id,
+                    status="posted",
+                    ai_draft=existing_reply,
+                    approved_reply=existing_reply,
+                    posted_at=existing.get("posted_at") or review_time
+                )
+            return jsonify({
+                "ok": True,
+                "action": "already_replied",
+                "message": "Review already exists and has an owner reply. Skipped to prevent re-replying or editing.",
+                "review_id": review_id,
+                "status": "posted"
+            }), 200
+
         return jsonify({
             "ok": True,
-            "message": "Review already exists",
+            "action": "pending",
+            "message": "Review already queued in system",
             "review_id": review_id,
             "status": existing.get("status")
         }), 200
@@ -208,24 +247,24 @@ def webhook_review_received():
     # Store in database
     db.insert_review(review_id, reviewer_name, star_rating, comment, review_time)
 
-    existing_reply = str(data.get("existing_reply", "")).strip()
-    if existing_reply:
-        # Review already has an owner reply on Google Maps - import historical record
+    # If the review ALREADY has an owner reply on Google Maps, preserve history & DO NOT REPLY
+    if existing_reply or has_reply_flag:
+        reply_content = existing_reply if existing_reply else "(Owner replied on Google)"
         db.update_review(
             review_id,
             status="posted",
-            ai_draft=existing_reply,
-            approved_reply=existing_reply,
+            ai_draft=reply_content,
+            approved_reply=reply_content,
             posted_at=review_time
         )
         return jsonify({
             "ok": True,
-            "action": "history_imported",
+            "action": "already_replied",
             "review_id": review_id,
-            "message": "Historical review and reply preserved"
+            "message": "Historical review and existing owner reply preserved. Skipped to prevent re-replying or editing."
         }), 200
 
-    # Generate reply using Groq
+    # Only truly unreplied reviews proceed to AI generation
     try:
         draft = ai_client.generate_reply(reviewer_name, star_rating, comment)
     except Exception as e:

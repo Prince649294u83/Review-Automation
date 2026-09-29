@@ -164,6 +164,48 @@ class Test247Features(unittest.TestCase):
         finally:
             ai_client.generate_reply = original_gen
 
+    def test_already_replied_guard(self):
+        """Verify that reviews with an existing reply are never re-replied to and preserve history."""
+        headers = {"X-Webhook-Secret": os.getenv("WEBHOOK_SECRET", "")}
+
+        # 1. Incoming review that already has an owner reply on Google Maps
+        payload = {
+            "review_id": "historical-rev-001",
+            "reviewer_name": "Chaithanya H N",
+            "star_rating": 5,
+            "comment": "Must try mandi biriyani and fish grill",
+            "review_time": "2025-01-01T10:00:00Z",
+            "existing_reply": "Thank you Chaithanya! Glad you loved it."
+        }
+        res = self.client.post("/api/webhook/review-received", headers=headers, json=payload)
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["action"], "already_replied")
+
+        # Verify DB status is posted and original reply text is preserved
+        saved = db.get_review_by_id("historical-rev-001")
+        self.assertEqual(saved["status"], "posted")
+        self.assertEqual(saved["approved_reply"], "Thank you Chaithanya! Glad you loved it.")
+
+        # 2. Subsequent call with same review must also return already_replied
+        res_repeat = self.client.post("/api/webhook/review-received", headers=headers, json=payload)
+        self.assertEqual(res_repeat.status_code, 200)
+        data_repeat = res_repeat.get_json()
+        self.assertEqual(data_repeat["action"], "already_replied")
+
+    def test_newest_first_ordering(self):
+        """Verify that get_pending_reviews sorts from newest to oldest."""
+        # Insert 3 reviews in arbitrary order
+        db.insert_review("rev-old", "Old Reviewer", 5, "Good", "2024-01-01T00:00:00+00:00")
+        db.insert_review("rev-newest", "Newest Reviewer", 5, "Excellent", "2026-09-29T10:00:00+00:00")
+        db.insert_review("rev-mid", "Mid Reviewer", 4, "Decent", "2025-06-15T00:00:00+00:00")
+
+        pending = db.get_pending_reviews()
+        self.assertEqual(len(pending), 3)
+        self.assertEqual(pending[0]["review_id"], "rev-newest")
+        self.assertEqual(pending[1]["review_id"], "rev-mid")
+        self.assertEqual(pending[2]["review_id"], "rev-old")
+
 
 if __name__ == "__main__":
     unittest.main()
