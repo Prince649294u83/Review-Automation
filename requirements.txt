@@ -8,3 +8,5 @@ groq
 python-dotenv
 requests
 tenacity
+psycopg2-binary
+

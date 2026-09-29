@@ -208,12 +208,30 @@ def webhook_review_received():
     # Store in database
     db.insert_review(review_id, reviewer_name, star_rating, comment, review_time)
 
+    existing_reply = str(data.get("existing_reply", "")).strip()
+    if existing_reply:
+        # Review already has an owner reply on Google Maps - import historical record
+        db.update_review(
+            review_id,
+            status="posted",
+            ai_draft=existing_reply,
+            approved_reply=existing_reply,
+            posted_at=review_time
+        )
+        return jsonify({
+            "ok": True,
+            "action": "history_imported",
+            "review_id": review_id,
+            "message": "Historical review and reply preserved"
+        }), 200
+
     # Generate reply using Groq
     try:
         draft = ai_client.generate_reply(reviewer_name, star_rating, comment)
     except Exception as e:
         db.update_review(review_id, error_message=str(e))
         return jsonify({"ok": False, "error": f"AI generation failed: {e}"}), 500
+
 
     if star_rating >= AUTO_MIN_STARS:
         # Mark as posted and return reply text for partner to publish
