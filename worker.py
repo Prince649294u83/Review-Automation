@@ -15,9 +15,10 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     handlers=[
-        logging.FileHandler("bot.log"),
+        logging.FileHandler("bot.log", encoding="utf-8"),
         logging.StreamHandler()
     ]
+
 )
 log = logging.getLogger(__name__)
 
@@ -31,9 +32,14 @@ STAR_MAP = {
 
 
 def parse_time(ts: str) -> datetime:
+    if not ts:
+        return datetime.now(timezone.utc)
     if ts.endswith("Z"):
         ts = ts[:-1] + "+00:00"
-    return datetime.fromisoformat(ts)
+    dt = datetime.fromisoformat(ts)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt
 
 
 # ══════════════════════════════════════════════════════
@@ -50,7 +56,7 @@ def fetch_and_store():
             reviewer     = r.get("reviewer", {}).get("displayName", "Guest")
             star_rating  = STAR_MAP.get(r.get("starRating", "FIVE"), 5)
             comment      = r.get("comment", "")
-            review_time  = r.get("createTime", datetime.utcnow().isoformat())
+            review_time  = r.get("createTime", datetime.now(timezone.utc).isoformat())
             already_replied = "reviewReply" in r  # Already has an owner reply
 
             # Only store if: new to us AND not already replied to
@@ -114,7 +120,7 @@ def process_pending():
                     status         = "posted",
                     ai_draft       = draft,
                     approved_reply = draft,
-                    posted_at      = datetime.utcnow().isoformat()
+                    posted_at      = datetime.now(timezone.utc).isoformat()
                 )
                 notifier.notify_auto_posted(reviewer, stars, draft)
                 log.info(f"  ✅ Auto-posted reply to '{reviewer}'")
@@ -166,7 +172,7 @@ def post_approved():
             db.update_review(
                 review_id,
                 status    = "posted",
-                posted_at = datetime.utcnow().isoformat()
+                posted_at = datetime.now(timezone.utc).isoformat()
             )
             log.info(f"✅ Posted approved reply for review {review_id}")
         else:

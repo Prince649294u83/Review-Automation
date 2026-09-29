@@ -1,0 +1,19 @@
+[Unit]
+Description=CRG Meridian Review Bot 24/7 Service
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/crg-review-bot
+ExecStart=/usr/bin/python3 app.py
+Restart=always
+RestartSec=10
+EnvironmentFile=/home/ubuntu/crg-review-bot/.env
+
+# Standard logging to syslog / journald
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

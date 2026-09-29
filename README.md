@@ -178,3 +178,24 @@ pm2 logs crg-review-bot
     ```bash
     sudo ufw allow 5000/tcp
     ```
+
+---
+
+### Step 8 — 24/7 Zero-Ban Mode: Make.com Partner Bridge (Recommended)
+
+If you do not have custom Google Business Profile developer API approval, use the pre-verified **Make.com Google My Business Partner Bridge**:
+- Runs in the cloud 24/7 for **$0/month** (<1,000 free operations/month).
+- **0% ban risk:** Uses Google's official verified partner OAuth flow.
+- Follow the complete setup instructions in [docs/make_integration_guide.md](docs/make_integration_guide.md).
+
+---
+
+### Step 9 — 24/7 Keep-Alive & Monitoring (UptimeRobot)
+
+To guarantee the bot never goes to sleep or crashes unnoticed:
+1. Create a free account at [UptimeRobot](https://uptimerobot.com).
+2. Add a new **HTTP(s) Monitor**:
+   - **URL:** `http://YOUR_SERVER_IP:5000/health` (or `https://your-render-url.onrender.com/health`)
+   - **Monitoring Interval:** Every 5 minutes
+3. If deployed on Render's free tier, this prevents the container from ever spinning down, keeping it active 24/7!
+

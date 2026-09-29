@@ -25,3 +25,6 @@ services:
         value: openai/gpt-oss-120b
       - key: TOKEN_FILE
         value: /etc/secrets/token.json
+      - key: WEBHOOK_SECRET
+        value: longlonglong
+
