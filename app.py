@@ -175,7 +175,10 @@ def webhook_review_received():
     if not check_webhook_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
-    data = request.get_json(silent=True) or {}
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+    else:
+        data = request.form.to_dict() or request.get_json(silent=True) or {}
     review_id = str(data.get("review_id", "")).strip()
     reviewer_name = str(data.get("reviewer_name", "Guest")).strip()
     
@@ -332,7 +335,10 @@ def webhook_mark_posted():
     if not check_webhook_auth():
         return jsonify({"ok": False, "error": "Unauthorized"}), 401
 
-    data = request.get_json(silent=True) or {}
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+    else:
+        data = request.form.to_dict() or request.get_json(silent=True) or {}
     review_id = str(data.get("review_id", "")).strip()
     if not review_id:
         return jsonify({"ok": False, "error": "Missing review_id"}), 400

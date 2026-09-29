@@ -206,6 +206,29 @@ class Test247Features(unittest.TestCase):
         self.assertEqual(pending[1]["review_id"], "rev-mid")
         self.assertEqual(pending[2]["review_id"], "rev-old")
 
+    def test_form_encoded_webhook(self):
+        """Verify that webhooks accept application/x-www-form-urlencoded data seamlessly."""
+        headers = {"X-Webhook-Secret": os.getenv("WEBHOOK_SECRET", "")}
+        form_data = {
+            "review_id": "form-rev-001",
+            "reviewer_name": "Kavitha",
+            "star_rating": "5",
+            "comment": "Special chicken biriyani with unique spices!\nLoved it.",
+            "existing_reply": "Thank you Kavitha!\nWarm regards,\nCRG Team"
+        }
+        res = self.client.post(
+            "/api/webhook/review-received",
+            headers=headers,
+            data=form_data
+        )
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertEqual(data["action"], "already_replied")
+
+        saved = db.get_review_by_id("form-rev-001")
+        self.assertEqual(saved["status"], "posted")
+        self.assertIn("CRG Team", saved["approved_reply"])
+
 
 if __name__ == "__main__":
     unittest.main()
