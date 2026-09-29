@@ -34,6 +34,9 @@ STAR_MAP = {
 def parse_time(ts: str) -> datetime:
     if not ts:
         return datetime.now(timezone.utc)
+    ts = str(ts).strip()
+    if not ts:
+        return datetime.now(timezone.utc)
     if ts.endswith("Z"):
         ts = ts[:-1] + "+00:00"
     dt = datetime.fromisoformat(ts)

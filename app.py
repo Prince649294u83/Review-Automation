@@ -190,7 +190,7 @@ def webhook_review_received():
             star_rating = 5
 
     comment = str(data.get("comment", "")).strip()
-    review_time = data.get("review_time") or datetime.now(timezone.utc).isoformat()
+    review_time = str(data.get("review_time", "")).strip() or datetime.now(timezone.utc).isoformat()
 
 
     if not review_id:
