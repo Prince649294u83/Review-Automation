@@ -101,14 +101,24 @@ class Test247Features(unittest.TestCase):
 
     def test_webhook_endpoints(self):
         """Test incoming review webhook and pending replies webhook."""
-        # 1. Test missing review_id
+        # 1. Test unauthorized request
+        res_unauth = self.client.post(
+            "/api/webhook/review-received",
+            json={"reviewer_name": "Bob"}
+        )
+        self.assertEqual(res_unauth.status_code, 401)
+
+        headers = {"X-Webhook-Secret": os.getenv("WEBHOOK_SECRET", "")}
+
+        # 2. Test missing review_id with auth
         res = self.client.post(
             "/api/webhook/review-received",
+            headers=headers,
             json={"reviewer_name": "Bob"}
         )
         self.assertEqual(res.status_code, 400)
 
-        # 2. Test receiving a 2-star review (should hold for approval)
+        # 3. Test receiving a 2-star review (should hold for approval)
         import ai_client
         original_gen = ai_client.generate_reply
         ai_client.generate_reply = lambda name, stars, comment: f"Dear {name}, we sincerely apologize for your experience."
@@ -121,7 +131,7 @@ class Test247Features(unittest.TestCase):
                 "comment": "Food was delayed and cold.",
                 "review_time": datetime.now(timezone.utc).isoformat()
             }
-            res = self.client.post("/api/webhook/review-received", json=review_payload)
+            res = self.client.post("/api/webhook/review-received", headers=headers, json=review_payload)
             self.assertEqual(res.status_code, 200)
             data = res.get_json()
             self.assertEqual(data["action"], "hold_for_approval")
@@ -132,27 +142,28 @@ class Test247Features(unittest.TestCase):
             self.assertEqual(saved["status"], "ai_drafted")
             self.assertIn("sincerely apologize", saved["ai_draft"])
 
-            # 3. Simulate manager approving the reply on dashboard
+            # 4. Simulate manager approving the reply on dashboard
             db.update_review(
                 "test-webhook-rev-2",
                 approved_reply="Dear Rohan, we sincerely apologize. Please contact us directly."
             )
 
-            # 4. Test pending-replies endpoint
-            res_pending = self.client.get("/api/webhook/pending-replies")
+            # 5. Test pending-replies endpoint
+            res_pending = self.client.get("/api/webhook/pending-replies", headers=headers)
             self.assertEqual(res_pending.status_code, 200)
             pending_data = res_pending.get_json()
             self.assertEqual(pending_data["count"], 1)
             self.assertEqual(pending_data["replies"][0]["review_id"], "test-webhook-rev-2")
 
-            # 5. Test mark-posted endpoint
-            res_mark = self.client.post("/api/webhook/mark-posted", json={"review_id": "test-webhook-rev-2"})
+            # 6. Test mark-posted endpoint
+            res_mark = self.client.post("/api/webhook/mark-posted", headers=headers, json={"review_id": "test-webhook-rev-2"})
             self.assertEqual(res_mark.status_code, 200)
             saved_posted = db.get_review_by_id("test-webhook-rev-2")
             self.assertEqual(saved_posted["status"], "posted")
 
         finally:
             ai_client.generate_reply = original_gen
+
 
 if __name__ == "__main__":
     unittest.main()
